@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>V萌猫小筑 · 后端联调台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">V</div>
+        <div><h1>V萌猫小筑</h1><p>Backend Playground</p></div>
+      </div>
+      <div class="health" id="healthBadge"><span class="status-dot"></span><span id="healthText">正在检查服务</span></div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div><p class="eyebrow">LOCAL TEST CONSOLE</p><h2>从登录到实时房间，<br />在一个页面里跑通。</h2></div>
+        <div class="intro-meta">
+          <span>API <strong>/api</strong></span><span>Socket <strong>/platform</strong></span>
+          <a href="/api/docs" target="_blank" rel="noreferrer">打开 Swagger ↗</a>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="session-panel panel">
+          <div class="panel-heading"><span class="step">01</span><h3>当前会话</h3></div>
+          <div class="avatar" id="avatar">?</div>
+          <div class="identity"><strong id="displayName">尚未登录</strong><span id="username">使用游客账号快速开始</span></div>
+          <dl class="session-facts">
+            <div><dt>PostgreSQL</dt><dd id="dbStatus">检查中</dd></div>
+            <div><dt>Redis</dt><dd id="redisStatus">检查中</dd></div>
+            <div><dt>Realtime</dt><dd id="socketStatus">未连接</dd></div>
+          </dl>
+          <button class="button primary wide" id="guestButton">游客快速登录</button>
+          <button class="button ghost wide" id="logoutButton" disabled>退出当前会话</button>
+        </aside>
+
+        <section class="actions-panel panel">
+          <div class="panel-heading"><span class="step">02</span><h3>账号与资料</h3></div>
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-tab="register">注册</button><button class="tab" data-tab="login">登录</button><button class="tab" data-tab="profile">资料</button>
+          </div>
+          <form id="registerForm" class="tab-content active" data-content="register">
+            <label>用户名<input name="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9_]+" placeholder="player001" required /></label>
+            <label>显示名称<input name="displayName" maxlength="32" placeholder="萌猫玩家" required /></label>
+            <label>密码<input name="password" type="password" minlength="8" maxlength="72" placeholder="至少 8 位" required /></label>
+            <button class="button dark" type="submit">注册并登录</button>
+          </form>
+          <form id="loginForm" class="tab-content" data-content="login">
+            <label>用户名<input name="username" placeholder="player001" required /></label>
+            <label>密码<input name="password" type="password" placeholder="输入密码" required /></label>
+            <button class="button dark" type="submit">登录</button>
+          </form>
+          <form id="profileForm" class="tab-content" data-content="profile">
+            <label>显示名称<input name="displayName" maxlength="32" placeholder="新的显示名称" /></label>
+            <label>头像地址<input name="avatarUrl" type="url" placeholder="https://..." /></label>
+            <div class="button-row"><button class="button dark" type="submit">更新资料</button><button class="button ghost" type="button" id="refreshProfile">读取资料</button></div>
+          </form>
+        </section>
+
+        <section class="room-panel panel">
+          <div class="panel-heading"><span class="step">03</span><h3>房间联调</h3></div>
+          <form id="createRoomForm">
+            <label>房间名称<input name="name" maxlength="40" value="萌猫测试房" required /></label>
+            <div class="field-pair"><label>玩法<input name="gameMode" maxlength="32" value="classic" required /></label><label>人数<input name="maxPlayers" type="number" min="2" max="16" value="4" required /></label></div>
+            <button class="button accent" type="submit">创建房间</button>
+          </form>
+          <div class="divider"><span>或者</span></div>
+          <form id="joinRoomForm" class="inline-form"><input name="code" maxlength="6" placeholder="输入 6 位房间码" required /><button class="button dark" type="submit">加入</button></form>
+          <div class="room-ticket" id="roomTicket" hidden><span>当前房间</span><strong id="roomName">-</strong><code id="roomCode">------</code></div>
+        </section>
+      </section>
+
+      <section class="console-panel panel">
+        <div class="panel-heading"><span class="step">LIVE</span><h3>请求与实时事件</h3><button class="text-button" id="clearLog">清空记录</button></div>
+        <div id="eventLog" class="event-log" aria-live="polite"><div class="log-entry muted"><time>READY</time><span>联调台已加载，等待操作。</span></div></div>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

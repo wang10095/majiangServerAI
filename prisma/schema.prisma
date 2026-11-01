@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum TeamRole {
+  OWNER
+  MEMBER
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  CLOSED
+}
+
+enum RoomMemberRole {
+  OWNER
+  PLAYER
+  SPECTATOR
+}
+
+enum ChatScope {
+  PRIVATE
+  TEAM
+  ROOM
+  SYSTEM
+}
+
+enum MatchStatus {
+  QUEUED
+  MATCHED
+  CANCELLED
+  EXPIRED
+}
+
+model User {
+  id               String         @id @default(cuid())
+  username         String         @unique
+  passwordHash     String?
+  displayName      String
+  avatarUrl        String?
+  role             UserRole       @default(USER)
+  status           UserStatus     @default(ACTIVE)
+  lastSeenAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  refreshTokens    RefreshToken[]
+  friendshipsSent  Friendship[]   @relation("FriendshipRequester")
+  friendshipsGot   Friendship[]   @relation("FriendshipAddressee")
+  teamMemberships  TeamMember[]
+  ownedTeams       Team[]         @relation("TeamOwner")
+  roomMemberships  RoomMember[]
+  ownedRooms       Room[]         @relation("RoomOwner")
+  sentMessages     ChatMessage[]  @relation("MessageSender")
+  receivedMessages ChatMessage[]  @relation("MessageRecipient")
+  matchTickets     MatchTicket[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  pairKey     String           @unique
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  requester   User             @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+}
+
+model Team {
+  id        String        @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  owner     User          @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  messages  ChatMessage[]
+
+  @@index([ownerId])
+}
+
+model TeamMember {
+  teamId   String
+  userId   String
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+}
+
+model Room {
+  id         String        @id @default(cuid())
+  code       String        @unique
+  name       String
+  gameMode   String
+  ownerId    String
+  maxPlayers Int           @default(4)
+  status     RoomStatus    @default(WAITING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  owner      User          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members    RoomMember[]
+  messages   ChatMessage[]
+  matches    MatchTicket[]
+
+  @@index([status, gameMode])
+}
+
+model RoomMember {
+  roomId   String
+  userId   String
+  role     RoomMemberRole @default(PLAYER)
+  ready    Boolean        @default(false)
+  joinedAt DateTime       @default(now())
+  room     Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id          String    @id @default(cuid())
+  scope       ChatScope
+  senderId    String
+  recipientId String?
+  teamId      String?
+  roomId      String?
+  content     String
+  createdAt   DateTime  @default(now())
+  sender      User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User?     @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  team        Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  room        Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([teamId, createdAt])
+  @@index([roomId, createdAt])
+}
+
+model MatchTicket {
+  id        String      @id @default(cuid())
+  userId    String
+  queueKey  String?     @unique
+  gameMode  String
+  status    MatchStatus @default(QUEUED)
+  roomId    String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room      Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([gameMode, status, createdAt])
+  @@index([userId, status])
+}
