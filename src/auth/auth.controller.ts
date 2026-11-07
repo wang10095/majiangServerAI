@@ -39,6 +39,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @Public()
   logout(@Body() dto: RefreshTokenDto) {
     return this.auth.logout(dto.refreshToken);
   }

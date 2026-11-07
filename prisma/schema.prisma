@@ -76,6 +76,46 @@ model User {
   sentMessages     ChatMessage[]  @relation("MessageSender")
   receivedMessages ChatMessage[]  @relation("MessageRecipient")
   matchTickets     MatchTicket[]
+  mahjongGames     MahjongGame[] @relation("MahjongGameOwner")
+  mahjongEvents    MahjongEvent[]
+}
+
+model MahjongGame {
+  id          String       @id
+  ownerId     String
+  status      String       @default("PLAYING")
+  state       Json
+  eventSeq    Int          @default(0)
+  actionSeq   Int          @default(0)
+  startedAt   DateTime     @default(now())
+  endedAt     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  owner       User         @relation("MahjongGameOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  events      MahjongEvent[]
+
+  @@index([ownerId, status, updatedAt])
+}
+
+model MahjongEvent {
+  id          String      @id @default(cuid())
+  gameId      String
+  actorUserId String?
+  actionSeq   Int
+  eventSeq    Int
+  actorSeat   Int
+  action      String
+  event       String
+  tile        Int?
+  tiles       Json
+  payload     Json
+  createdAt   DateTime    @default(now())
+  game        MahjongGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  actorUser   User?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@unique([gameId, actionSeq])
+  @@index([gameId, eventSeq])
+  @@index([actorUserId, createdAt])
 }
 
 model RefreshToken {

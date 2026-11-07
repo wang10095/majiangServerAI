@@ -14,12 +14,28 @@ function toast(message, error = false) {
   clearTimeout(toast.timer); toast.timer = setTimeout(() => { element.className = 'toast'; }, 2600);
 }
 
-async function request(path, options = {}) {
+async function request(path, options = {}, allowRefresh = true) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (state.accessToken) headers.Authorization = `Bearer ${state.accessToken}`;
   const response = await fetch(`/api${path}`, { ...options, headers });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) { const detail = payload.detail || payload.message || `HTTP ${response.status}`; log('ERROR', detail, 'error'); throw new Error(Array.isArray(detail) ? detail.join(', ') : detail); }
+  if (response.status === 401 && allowRefresh && state.refreshToken && path !== '/auth/refresh' && path !== '/auth/logout') {
+    try {
+      const refreshResponse = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: state.refreshToken }),
+      });
+      const refreshPayload = await refreshResponse.json().catch(() => ({}));
+      if (refreshResponse.ok && refreshPayload.data) {
+        saveSession(refreshPayload.data);
+        const retryHeaders = { ...options.headers };
+        delete retryHeaders.Authorization;
+        return request(path, { ...options, headers: retryHeaders }, false);
+      }
+    } catch (error) { log('REFRESH', error instanceof Error ? error.message : '刷新登录状态失败', 'error'); }
+  }
+  if (!response.ok) { const detail = payload.error || payload.detail || payload.message || `HTTP ${response.status}`; const message = typeof detail === 'object' ? (detail.message || JSON.stringify(detail)) : detail; log('ERROR', message, 'error'); throw new Error(Array.isArray(message) ? message.join(', ') : message); }
   log(options.method || 'GET', `${path} → ${response.status}`); return payload.data;
 }
 

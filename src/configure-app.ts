@@ -33,6 +33,10 @@ export function configureApp(app: NestExpressApplication): void {
   app.useBodyParser('json', {
     limit: config.get<string>('HTTP_BODY_LIMIT', '100kb'),
   });
+  app.useBodyParser('raw', {
+    type: 'application/x-protobuf',
+    limit: config.get<string>('HTTP_BODY_LIMIT', '100kb'),
+  });
   app.useBodyParser('urlencoded', {
     limit: config.get<string>('HTTP_BODY_LIMIT', '100kb'),
     extended: true,

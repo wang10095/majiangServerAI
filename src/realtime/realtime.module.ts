@@ -20,5 +20,6 @@ import { SocketRateLimitGuard } from './socket-rate-limit.guard';
     PlatformGateway,
     GameGateway,
   ],
+  exports: [RealtimeAuthService],
 })
 export class RealtimeModule {}

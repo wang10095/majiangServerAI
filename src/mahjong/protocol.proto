@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package mahjong;
+
+enum MessageType {
+  MESSAGE_UNKNOWN = 0;
+  COMMAND = 1;
+  EVENT = 2;
+  ERROR = 3;
+  SNAPSHOT_REQUEST = 4;
+  SNAPSHOT = 5;
+}
+
+enum ActionType {
+  ACTION_UNKNOWN = 0;
+  START_SINGLE_GAME = 1;
+  DISCARD = 2;
+  CHI = 3;
+  PENG = 4;
+  MING_GANG = 5;
+  AN_GANG = 6;
+  BU_GANG = 7;
+  HU = 8;
+  PASS = 9;
+}
+
+message Envelope {
+  uint32 protocol_version = 1;
+  MessageType message_type = 2;
+  string game_id = 3;
+  string request_id = 4;
+  uint64 client_seq = 5;
+  uint64 event_seq = 6;
+  uint64 state_version = 7;
+  uint64 ack_event_seq = 8;
+  oneof payload {
+    MahjongCommand command = 20;
+    MahjongEvent event = 21;
+    MahjongError error = 22;
+    SnapshotRequest snapshot_request = 23;
+    GameSnapshot snapshot = 24;
+  }
+}
+
+message MahjongCommand {
+  ActionType type = 1;
+  int32 tile = 2;
+  repeated int32 tiles = 3;
+}
+
+message MahjongEvent {
+  string name = 1;
+  bool success = 2;
+  string code = 3;
+  string message = 4;
+  int32 actor_seat = 5;
+  int32 next_operate_seat = 6;
+}
+
+message MahjongError {
+  string code = 1;
+  string message = 2;
+}
+
+message SnapshotRequest { uint64 last_event_seq = 1; }
+
+message GameSnapshot {
+  string game_id = 1;
+  uint64 event_seq = 2;
+  uint64 state_version = 3;
+  int32 current_seat = 4;
+  int32 dealer_seat = 5;
+  uint32 wall_remaining = 6;
+  repeated PlayerSnapshot players = 7;
+}
+
+message PlayerSnapshot {
+  int32 seat = 1;
+  bool bot = 2;
+  repeated int32 hand = 3;
+  uint32 hand_count = 4;
+  repeated int32 discards = 5;
+  bool listening = 6;
+  repeated int32 waiting_tiles = 7;
+}

@@ -8,9 +8,9 @@ export class RegisterDto {
   @Matches(/^[a-zA-Z0-9_]+$/)
   username!: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: 1, maxLength: 16 })
   @IsString()
-  @Length(8, 72)
+  @Length(1, 16)
   password!: string;
 
   @ApiProperty({ example: '萌猫玩家' })
